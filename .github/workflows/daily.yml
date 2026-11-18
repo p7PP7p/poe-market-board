@@ -42,14 +42,17 @@ jobs:
             git push
           fi
 
-      # 可選：每天把連結推到微信（需在 repo Secrets 設定 SERVERCHAN_KEY）
+      # 可選：每天把連結推到微信（在 repo Secrets 設定 SERVERCHAN_KEY 後自動生效）
       - name: Push link (optional)
-        if: ${{ secrets.SERVERCHAN_KEY != '' }}
         env:
           KEY: ${{ secrets.SERVERCHAN_KEY }}
           PAGES_URL: ${{ vars.PAGES_URL }}
         run: |
-          TITLE="PoE ${POE_LEAGUE:-Covens} 行情交易榜已更新"
+          if [ -z "$KEY" ]; then
+            echo "SERVERCHAN_KEY 未設定，跳過推送"
+            exit 0
+          fi
+          TITLE="PoE 行情交易榜已更新"
           DESP="今日榜單已刷新：${PAGES_URL:-见仓库 Pages 地址}"
           curl -s -X POST "https://sctapi.ftqq.com/${KEY}.send" \
             -d "title=${TITLE}" -d "desp=${DESP}" || true
