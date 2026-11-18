@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PoE 行情交易榜 · __LEAGUE__</title>
+<style>
+:root{--bg:#0d1117;--panel:#161b22;--line:#232b36;--txt:#e6edf3;--dim:#8b949e;
+--up:#3fb950;--down:#f85149;--warn:#d29922;--acc:#58a6ff}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font:14px/1.6 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif;padding:18px 20px 60px}
+h1{font-size:19px;font-weight:600;letter-spacing:.3px}
+h1 small{font-size:12px;color:var(--dim);font-weight:400;margin-left:8px}
+.wrap{max-width:1500px;margin:0 auto}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;
+padding-bottom:14px;border-bottom:1px solid var(--line);margin-bottom:18px}
+.kpis{display:flex;gap:10px;flex-wrap:wrap}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:7px 13px;min-width:104px}
+.kpi b{display:block;font-size:16px;font-weight:600}
+.kpi span{font-size:11px;color:var(--dim)}
+.up{color:var(--up)}.down{color:var(--down)}.warn{color:var(--warn)}
+h2{font-size:14px;font-weight:600;margin:24px 0 10px;color:var(--acc);letter-spacing:.5px}
+h2 em{font-style:normal;color:var(--dim);font-size:11.5px;font-weight:400;margin-left:8px}
+.grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.box h3{font-size:12.5px;font-weight:600;margin-bottom:8px;display:flex;justify-content:space-between}
+.box h3 i{font-style:normal;color:var(--dim);font-weight:400;font-size:11px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid #1b222c;font-size:12.5px}
+.row:last-child{border:0}
+.row .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.row .vv{font-variant-numeric:tabular-nums;font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{padding:6px 9px;text-align:left;border-bottom:1px solid #1b222c;white-space:nowrap}
+th{color:var(--dim);font-weight:500;font-size:11.5px;cursor:pointer;user-select:none;position:sticky;top:0;background:#0d1117;z-index:2}
+th:hover{color:var(--acc)}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+tr:hover td{background:#12181f}
+.tablewrap{max-height:620px;overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+input,select{background:var(--panel);border:1px solid var(--line);color:var(--txt);padding:6px 10px;border-radius:7px;font-size:12.5px;outline:none}
+input{min-width:220px}
+input:focus,select:focus{border-color:var(--acc)}
+.pill{display:inline-block;padding:1px 7px;border-radius:20px;font-size:10.5px;border:1px solid var(--line);color:var(--dim)}
+.tag{font-size:10.5px;padding:1px 7px;border-radius:20px;font-weight:600}
+.t-sell{background:rgba(63,185,80,.14);color:var(--up)}
+.t-bubble{background:rgba(210,153,34,.16);color:var(--warn)}
+.t-dip{background:rgba(88,166,255,.15);color:var(--acc)}
+.t-avoid{background:rgba(248,81,73,.13);color:var(--down)}
+.t-none{color:#4b5563}
+.note{color:var(--dim);font-size:11.5px;line-height:1.75;margin-top:10px;
+background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--acc);border-radius:8px;padding:10px 14px}
+.note b{color:var(--txt)}
+.empty{color:var(--dim);font-size:12px;padding:10px 0}
+footer{color:#4b5563;font-size:11px;margin-top:26px;text-align:center}
+img.ic{width:26px;height:26px;object-fit:contain;vertical-align:middle;margin-right:7px;flex:0 0 26px}
+.cellname{display:flex;align-items:center;max-width:340px}
+.cellname div{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cellname small{display:block;color:var(--dim);font-size:10.5px}
+@media(max-width:640px){body{padding:12px}.cellname{max-width:150px}input{min-width:130px;flex:1}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <h1>PoE 行情交易榜 · __LEAGUE__ 賽季<small id="upd"></small></h1>
+  </div>
+  <div class="kpis" id="kpis"></div>
+</header>
+
+<h2>操作結論 <em>依「校正後真實漲跌」×「場內流動性」四象限自動歸類，流動性取同類在售量百分位</em></h2>
+<div class="grid4" id="quad"></div>
+
+<h2>分類真實中位數 <em>已剔除神聖石通膨；「有變動樣本」排除 7 日零價格變動的裝備/寶石，避免中位被零值綁架</em></h2>
+<div class="tablewrap" style="max-height:460px">
+<table id="catTable">
+<thead><tr>
+<th data-k="zh">分類</th><th data-k="n" class="num">樣本</th><th data-k="n_mv" class="num">有變動</th>
+<th data-k="med_mv" class="num">真實中位(有變動)</th><th data-k="med_all" class="num">真實中位(全體)</th>
+<th data-k="up" class="num">上漲</th><th data-k="down" class="num">下跌</th>
+</tr></thead>
+<tbody></tbody></table>
+</div>
+
+<h2>全品項明細 <em>點表頭排序；真實漲跌 = (1+原始7日漲跌)/(1+神聖石7日漲跌)-1</em></h2>
+<div class="tools">
+  <input id="q" placeholder="搜尋品項 / 基底名…">
+  <select id="fcat"><option value="">全部分類</option></select>
+  <select id="fsort">
+    <option value="real_asc">真實跌幅最大</option>
+    <option value="real_desc">真實漲幅最大</option>
+    <option value="vol_desc">在售量最大</option>
+    <option value="p_desc">價格最高</option>
+  </select>
+  <select id="ftag">
+    <option value="">全部建議</option>
+    <option value="sell">強勢變現</option>
+    <option value="bubble">投機泡沫</option>
+    <option value="dip">超跌錯殺</option>
+    <option value="avoid">冷門規避</option>
+  </select>
+</div>
+<div class="tablewrap">
+<table id="mainTable">
+<thead><tr>
+<th data-k="n">品項</th><th data-k="zh">分類</th><th data-k="p" class="num">價格(混沌石)</th>
+<th data-k="chg" class="num">7日原始</th><th data-k="real" class="num">7日真實</th>
+<th data-k="vol" class="num">在售量</th><th data-k="tag">建議</th>
+</tr></thead>
+<tbody></tbody></table>
+</div>
+
+<div class="note">
+<b>讀數說明</b><br>
+1. <b>原始漲跌</b>直接來自 poe.ninja 的 7 日 <span class="pill">totalChange</span>，以神聖石為計價基準；神聖石本身若大漲，所有品項的「原始」數字都會被動虛高。<br>
+2. <b>真實漲跌</b>已用 <span class="pill">(1+原始漲跌) / (1+神聖石漲跌) - 1</span> 校正，代表相對神聖石的實際購買力變化，買賣判斷只看此列。<br>
+3. <b>零變動樣本</b>（大量傳奇裝備、技能寶石 7 日報價未動）的「真實漲跌」會剛好等於神聖石貶值幅度，這是有效結論而非資料缺陷，故分類表同時提供「有變動」與「全體」兩欄。<br>
+4. 資料來源 poe.ninja 公開 API，抓取時間 <b id="upd2"></b>；本頁為靜態頁，每次排程重新抓取後自動更新，<b>不依賴任何一台電腦開機</b>。
+</div>
+<footer>資料 © poe.ninja · 本頁僅供參考，不構成投資建議</footer>
+</div>
+
+<script id="DATA" type="application/json">__DATA__</script>
+<script>
+const D = JSON.parse(document.getElementById('DATA').textContent);
+const rows = D.rows, stats = D.stats, CAT = {};
+stats.forEach(s => CAT[s.c] = s.zh);
+const fmt = (v,d=1) => (v===null||v===undefined) ? '—' : (v>=0?'+':'') + v.toFixed(d) + '%';
+const cls = v => (v===null||v===undefined) ? '' : (v>0.05?'up':(v<-0.05?'down':''));
+const num = v => (v===null||v===undefined) ? '—' : v.toLocaleString('en-US',{maximumFractionDigits:0});
+const priceTxt = v => v===null||v===undefined ? '—' : (v>=1000? v.toLocaleString('en-US',{maximumFractionDigits:0}) : v.toFixed(v<1?3:1));
+const ico = r => r.icon ? (r.icon.startsWith('/') ? 'https://poe.ninja'+r.icon : r.icon) : '';
+
+document.getElementById('upd').textContent = '　資料更新 ' + D.updated_at + ' (UTC+8)';
+document.getElementById('upd2').textContent = D.updated_at + ' UTC+8';
+
+// KPI
+const dp = D.divine_price;
+document.getElementById('kpis').innerHTML = [
+  ['1 神聖石', dp? priceTxt(dp)+' c' : '—', ''],
+  ['神聖石 7日', fmt(D.divine_chg7d), cls(D.divine_chg7d)],
+  ['樣本總數', num(D.total_items), ''],
+  ['明細條目', num(rows.length), ''],
+].map(([k,v,c]) => `<div class="kpi"><span>${k}</span><b class="${c}">${v}</b></div>`).join('');
+
+// 流動性百分位（同類內 vol）
+const byCat = {};
+rows.forEach(r => (byCat[r.c] = byCat[r.c] || []).push(r));
+const liq = new Map();
+Object.values(byCat).forEach(arr => {
+  const s = arr.slice().sort((a,b)=>a.vol-b.vol);
+  s.forEach((r,i)=> liq.set(r, s.length>1 ? (i/(s.length-1))*100 : 50));
+});
+const TAG = {sell:'強勢變現', bubble:'投機泡沫', dip:'超跌錯殺', avoid:'冷門規避'};
+rows.forEach(r => {
+  const L = liq.get(r), v = r.real, ch = r.chg || 0;
+  let t = '';
+  if (v!==null) {
+    if (v >= 30 && L < 50) t='bubble';
+    else if (v >= 10 && L >= 70) t='sell';
+    else if (v <= -25 && L >= 70) t='dip';
+    else if (v <= -25 && L < 50) t='avoid';
+  }
+  r.tag = t; r.zh = CAT[r.c] || r.c;
+  r._chg = ch; r._real = (v===null?-1e9:v);
+});
+
+// 四象限
+const quads = [
+  ['sell','強勢變現','真實漲 ≥10% 且在售量同類前 30%','趁流動性好、尚未砸盤時出貨'],
+  ['bubble','投機泡沫','真實漲 ≥30% 但在售量同類後 50%','量能薄、易被少數掛單拉抬，勿追'],
+  ['dip','超跌錯殺','真實跌 ≤-25% 且在售量同類前 30%','有實際成交的超跌，可分批接'],
+  ['avoid','冷門規避','真實跌 ≤-25% 且在售量同類後 50%','無人接盤的陰跌，勿當便宜貨'],
+];
+document.getElementById('quad').innerHTML = quads.map(([k,title,cond,hint]) => {
+  const list = rows.filter(r=>r.tag===k).sort((a,b)=> (k==='sell'||k==='bubble') ? b._real-a._real : a._real-b._real).slice(0,7);
+  const body = list.length ? list.map(r=>`<div class="row"><span class="nm" title="${r.n}">${r.n}</span>
+    <span class="vv ${r._real>0?'up':'down'}">${fmt(r._real)}</span></div>`).join('')
+    : '<div class="empty">無符合條件的品項</div>';
+  return `<div class="box"><h3><span class="t-${k==='sell'?'sell':k==='bubble'?'bubble':k==='dip'?'dip':'avoid'} tag">${title}</span>
+  <i>${rows.filter(r=>r.tag===k).length} 項</i></h3>${body}
+  <div class="empty" style="font-size:11px;margin-top:6px">${cond}<br>${hint}</div></div>`;
+}).join('');
+
+// 分類表
+const catBody = document.getElementById('catTable').querySelector('tbody');
+let catRows = stats.slice();
+function renderCat(){
+  catBody.innerHTML = catRows.map(s=>`<tr>
+   <td>${s.zh}</td><td class="num">${num(s.n)}</td><td class="num">${num(s.n_mv)}</td>
+   <td class="num ${cls(s.med_mv)}" style="font-weight:600">${fmt(s.med_mv)}</td>
+   <td class="num ${cls(s.med_all)}">${fmt(s.med_all)}</td>
+   <td class="num up">${num(s.up)}</td><td class="num down">${num(s.down)}</td></tr>`).join('');
+}
+renderCat();
+document.querySelectorAll('#catTable th').forEach(th=>{
+  th.onclick = () => {
+    const k = th.dataset.k, asc = th.dataset.asc !== '1';
+    th.dataset.asc = asc ? '1' : '0';
+    catRows.sort((a,b)=> asc ? ((a[k]>b[k])?1:-1) : ((a[k]<b[k])?1:-1));
+    renderCat();
+  };
+});
+
+// 主表
+const fcat = document.getElementById('fcat');
+stats.forEach(s=> fcat.insertAdjacentHTML('beforeend', `<option value="${s.c}">${s.zh} (${s.n})</option>`));
+const tbody = document.getElementById('mainTable').querySelector('tbody');
+let view = [];
+function render(){
+  const q = document.getElementById('q').value.trim().toLowerCase();
+  const c = fcat.value, tg = document.getElementById('ftag').value;
+  const sort = document.getElementById('fsort').value;
+  view = rows.filter(r =>
+    (!c || r.c===c) && (!tg || r.tag===tg) &&
+    (!q || r.n.toLowerCase().includes(q) || (r.b||'').toLowerCase().includes(q)));
+  const cmp = {
+    real_asc:(a,b)=>a._real-b._real, real_desc:(a,b)=>b._real-a._real,
+    vol_desc:(a,b)=>b.vol-a.vol, p_desc:(a,b)=>(b.p||0)-(a.p||0)
+  }[sort];
+  view.sort(cmp);
+  const LIMIT = 400;
+  tbody.innerHTML = view.slice(0,LIMIT).map(r=>{
+    const im = ico(r);
+    return `<tr>
+    <td><div class="cellname">${im?`<img class="ic" loading="lazy" src="${im}" onerror="this.style.display='none'">`:''}
+        <div>${r.n}${r.b && r.b!==r.n.toLowerCase().replace(/[^a-z0-9]+/g,'-')?`<small>${r.b}</small>`:''}</div></div></td>
+    <td><span class="pill">${r.zh}</span></td>
+    <td class="num">${priceTxt(r.p)}</td>
+    <td class="num ${cls(r.chg)}">${fmt(r.chg)}</td>
+    <td class="num ${cls(r.real)}" style="font-weight:600">${fmt(r.real)}</td>
+    <td class="num">${num(r.vol)}</td>
+    <td>${r.tag?`<span class="tag t-${r.tag}">${TAG[r.tag]}</span>`:'<span class="tag t-none">—</span>'}</td></tr>`;
+  }).join('') || '<tr><td colspan="7" class="empty">無符合條件的品項</td></tr>';
+  if (view.length > LIMIT)
+    tbody.insertAdjacentHTML('beforeend', `<tr><td colspan="7" class="empty">僅顯示前 ${LIMIT} 筆（共 ${view.length} 筆），請縮小搜尋範圍</td></tr>`);
+}
+['q','fcat','fsort','ftag'].forEach(id=> document.getElementById(id).addEventListener('input', render));
+render();
+</script>
+</body>
+</html>
