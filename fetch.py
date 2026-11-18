@@ -3,8 +3,9 @@
 純 HTTP，無瀏覽器依賴，可在 GitHub Actions / 任意伺服器執行。
 輸出 data.json（給 index.html 讀取）+ index.html（自包含內嵌資料）
 """
-import json, gzip, sys, os, statistics, time
+import json, gzip, sys, os, statistics, time, re, unicodedata
 import urllib.request
+import urllib.parse
 
 LEAGUE = os.environ.get("POE_LEAGUE", "Covens")
 OUT_DIR = os.environ.get("OUT_DIR", ".")
@@ -27,6 +28,57 @@ CAT_ZH = {
     "UniqueJewel": "傳奇珠寶", "UniqueFlask": "傳奇藥劑", "SkillGem": "技能寶石",
     "BaseType": "基底", "ClusterJewel": "星團珠寶", "Map": "地圖", "Invitation": "邀請函",
 }
+
+# ---------- 繁中譯名（zh_tw.json 與本檔同目錄；缺失時整頁回退英文，不影響抓取）----------
+_ZH_MAP, _ZH_CJ = {}, {}
+try:
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "zh_tw.json"), encoding="utf-8") as _f:
+        _zd = json.load(_f)
+        _ZH_MAP = _zd.get("map", {})
+        _ZH_CJ = _zd.get("cjtpl", {})
+    print(f"[zh] 譯名表載入 {len(_ZH_MAP)} 條 / 星團詞綴 {len(_ZH_CJ)} 條")
+except Exception as _e:
+    print(f"[zh] 譯名表未載入（將顯示英文）: {_e}")
+
+_ZH_PFX = {"Foulborn": "穢生", "Replica": "贗品", "Legacy": "遺產",
+           "Synthesised": "追憶", "Fractured": "破裂", "Relic": "聖物"}
+_ZH_PRE = re.compile(r"^(Foulborn|Replica|Legacy|Synthesised|Fractured|Relic)\s+(.+)$")
+_ZH_PAR = re.compile(r"^(.+?) \((.+)\)$")
+_ZH_NUM = re.compile(r"[+-]?\d+(?:\.\d+)?")
+
+
+def znorm(s):
+    s = urllib.parse.unquote(str(s))
+    s = unicodedata.normalize("NFKD", s)
+    s = "".join(c for c in s if not unicodedata.combining(c))
+    return re.sub(r"[^a-z0-9]", "", s.lower())
+
+
+def zh_name(n):
+    """英文物品名 -> 繁中；詞綴式長句不在此處理。"""
+    if not n:
+        return None
+    hit = _ZH_MAP.get(znorm(n))
+    if hit:
+        return hit
+    m = _ZH_PRE.match(n)
+    if m:
+        inner = zh_name(m.group(2))
+        if inner:
+            return _ZH_PFX[m.group(1)] + "．" + inner
+    m = _ZH_PAR.match(n)
+    if m:
+        a, b = zh_name(m.group(1)), zh_name(m.group(2))
+        if a and b:
+            return f"{a}（{b}）"
+    return None
+
+
+def zh_tpl(n):
+    """星團珠寶詞綴長句：數值換成 # 後按模板查表。"""
+    if not n:
+        return None
+    return _ZH_CJ.get(znorm(_ZH_NUM.sub("#", n)))
 
 
 def get(url, retry=3):
@@ -116,6 +168,20 @@ def main():
         except Exception as e:
             errors.append(f"{t}: {e}")
             print(f"[st] {t} FAIL {e}")
+
+    # 繁中譯名：n/b 保留英文原文，z/bz 存中文（前端優先顯示中文，英文作副行）
+    zh_hit = 0
+    for r in rows:
+        n = r.get("n") or ""
+        z = zh_name(n) or (zh_tpl(n) if r.get("c") == "ClusterJewel" else None)
+        if z and z != n:
+            r["z"] = z
+            zh_hit += 1
+        b = r.get("b") or ""
+        bz = zh_name(b)
+        if bz and bz != b:
+            r["bz"] = bz
+    print(f"[zh] 名稱譯中 {zh_hit}/{len(rows)} = {zh_hit / max(len(rows), 1) * 100:.1f}%")
 
     # 神聖石錨點
     div = next((r for r in rows if r["c"] == "Currency" and r["b"] == "divine-orb"), None)

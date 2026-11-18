@@ -174,7 +174,7 @@ const quads = [
 ];
 document.getElementById('quad').innerHTML = quads.map(([k,title,cond,hint]) => {
   const list = rows.filter(r=>r.tag===k).sort((a,b)=> (k==='sell'||k==='bubble') ? b._real-a._real : a._real-b._real).slice(0,7);
-  const body = list.length ? list.map(r=>`<div class="row"><span class="nm" title="${r.n}">${r.n}</span>
+  const body = list.length ? list.map(r=>`<div class="row"><span class="nm" title="${r.n}">${r.z||r.n}</span>
     <span class="vv ${r._real>0?'up':'down'}">${fmt(r._real)}</span></div>`).join('')
     : '<div class="empty">無符合條件的品項</div>';
   return `<div class="box"><h3><span class="t-${k==='sell'?'sell':k==='bubble'?'bubble':k==='dip'?'dip':'avoid'} tag">${title}</span>
@@ -213,7 +213,7 @@ function render(){
   const sort = document.getElementById('fsort').value;
   view = rows.filter(r =>
     (!c || r.c===c) && (!tg || r.tag===tg) &&
-    (!q || r.n.toLowerCase().includes(q) || (r.b||'').toLowerCase().includes(q)));
+    (!q || r.n.toLowerCase().includes(q) || (r.b||'').toLowerCase().includes(q) || (r.z||'').includes(q) || (r.bz||'').includes(q)));
   const cmp = {
     real_asc:(a,b)=>a._real-b._real, real_desc:(a,b)=>b._real-a._real,
     vol_desc:(a,b)=>b.vol-a.vol, p_desc:(a,b)=>(b.p||0)-(a.p||0)
@@ -224,7 +224,7 @@ function render(){
     const im = ico(r);
     return `<tr>
     <td><div class="cellname">${im?`<img class="ic" loading="lazy" src="${im}" onerror="this.style.display='none'">`:''}
-        <div>${r.n}${r.b && r.b!==r.n.toLowerCase().replace(/[^a-z0-9]+/g,'-')?`<small>${r.b}</small>`:''}</div></div></td>
+        <div>${r.z||r.n}${r.z?`<small>${r.n}</small>${r.bz&&r.bz!==r.z?`<small>${r.bz}</small>`:''}`:(r.b&&r.b!==r.n.toLowerCase().replace(/[^a-z0-9]+/g,'-')?`<small>${r.bz||r.b}</small>`:'')}</div></div></td>
     <td><span class="pill">${r.zh}</span></td>
     <td class="num">${priceTxt(r.p)}</td>
     <td class="num ${cls(r.chg)}">${fmt(r.chg)}</td>
