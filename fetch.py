@@ -116,13 +116,21 @@ def fetch_exchange(t):
         if not it:
             continue
         pv = ln.get("primaryValue")
+        vpv = ln.get("volumePrimaryValue")
+        vol = None
+        if pv and vpv:
+            try:
+                vol = round(float(vpv) / float(pv), 2)   # 24h 估算成交量(件) = 成交額 / 單價
+            except Exception:
+                vol = None
         out.append({
             "n": it.get("name") or ln.get("id"),
             "b": it.get("detailsId") or "",
             "c": t,
             "p": None if pv is None else float(pv),
             "chg": chg_of(ln.get("sparkline")),
-            "vol": float(ln.get("volumePrimaryValue") or 0),
+            "vol": vol,
+            "vk": "t24",
             "icon": it.get("image") or "",
         })
     return out
@@ -136,6 +144,7 @@ def fetch_stash(t):
         out.append({
             "n": ln.get("name") or "",
             "b": ln.get("baseType") or ln.get("variant") or "",
+            "v": ln.get("variant") or "",
             "c": t,
             "p": None if cv is None else float(cv),
             "chg": chg_of(ln.get("sparkLine")),
